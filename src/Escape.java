@@ -16,7 +16,67 @@ public class Escape {
     public record Result(int[] path, int visited, int deadEnds) {}
 
     public static Result escape(Input.Walls w, int[] broken) {
-        // TODO
-        return new Result(new int[0], 0, 0);
+        int n = w.cells();
+        int cols = w.cols();
+        int[][] graph = Graphs.open(w, broken);
+
+        int deadEnds = 0;
+        for (int[] neighbours : graph) {
+            if (neighbours.length == 1) {
+                deadEnds++;
+            }
+        }
+
+        boolean[] seen = new boolean[n];
+        int[] stack = new int[n];
+        int[] nextDirection = new int[n];
+        int top = 0;
+        int visitedCount = 1;
+
+        stack[0] = 0;
+        seen[0] = true;
+
+        while (top >= 0) {
+            int cell = stack[top];
+
+            if (cell == n - 1) {
+                int[] path = java.util.Arrays.copyOf(stack, top + 1);
+                return new Result(path, visitedCount, deadEnds);
+            }
+
+            if (nextDirection[cell] == 4) {
+                top--;
+                continue;
+            }
+
+            int direction = nextDirection[cell]++;
+
+            int next = switch (direction) {
+                case 0 -> cell >= cols ? cell - cols : -1;
+                case 1 -> cell % cols < cols - 1 ? cell + 1 : -1;
+                case 2 -> cell + cols < n ? cell + cols : -1;
+                default -> cell % cols > 0 ? cell - 1 : -1;
+            };
+
+            if (next == -1 || seen[next]) {
+                continue;
+            }
+
+            boolean passage = false;
+            for (int neighbour : graph[cell]) {
+                if (neighbour == next) {
+                    passage = true;
+                    break;
+                }
+            }
+
+            if (passage) {
+                seen[next] = true;
+                visitedCount++;
+                stack[++top] = next;
+            }
+        }
+
+        return new Result(new int[0], visitedCount, deadEnds);
     }
 }
