@@ -95,7 +95,57 @@ public class Zones {
      * [1] the cost of the cheapest route from the zone of cell 0 to the zone of the last cell.
      */
     public static long[] routes(Input.Slides s, int[] zoneOf, int zoneCount) {
-        // TODO
-        return new long[]{0, 0};
+        ArrayList<Map<Integer, Integer>> graph = new ArrayList<>();
+
+        for (int i = 0; i < zoneCount; i++) {
+            graph.add(new HashMap<>());
+        }
+
+        // Между каждой парой зон оставляем самый дешёвый переход.
+        for (int i = 0; i < s.count(); i++) {
+            int from = zoneOf[s.from()[i]];
+            int to = zoneOf[s.to()[i]];
+
+            if (from != to) {
+                graph.get(from).merge(to, s.time()[i], Math::min);
+            }
+        }
+
+        long infinity = Long.MAX_VALUE / 4;
+        long[] distance = new long[zoneCount];
+        Arrays.fill(distance, infinity);
+        distance[zoneOf[0]] = 0;
+
+        int[] stages = new int[zoneCount];
+        Arrays.fill(stages, 1);
+        long flowStages = 0;
+
+        // Номера зон уже идут в топологическом порядке.
+        for (int zone = 0; zone < zoneCount; zone++) {
+            flowStages = Math.max(flowStages, stages[zone]);
+
+            for (Map.Entry<Integer, Integer> edge
+                    : graph.get(zone).entrySet()) {
+
+                int next = edge.getKey();
+                int cost = edge.getValue();
+
+                stages[next] = Math.max(
+                        stages[next], stages[zone] + 1
+                );
+
+                if (distance[zone] != infinity) {
+                    distance[next] = Math.min(
+                            distance[next], distance[zone] + cost
+                    );
+                }
+            }
+        }
+
+        return new long[]{
+                flowStages,
+                distance[zoneOf[s.n() - 1]]
+        };
+
     }
 }
